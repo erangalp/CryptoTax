@@ -1,0 +1,48 @@
+body {
+    font-family: "Open Sans", sans-serif;
+}
+.month-revenue {
+    list-style:none;
+}
+.month-revenue li {
+    display:inline-block;
+    font-size:10pt;
+    text-transform: uppercase;
+    font-weight: 600;
+    text-align: right;
+    min-width: 80px;
+    padding:10px;
+    position:relative;
+    color:#fff;
+}
+.month-revenue li em {
+    position: absolute;
+    top:-20px;
+    right:5px;
+    font-style:normal;
+    color:#333;
+}
+.month-revenue li:nth-child(1) {
+    background:#c23531;
+}
+.month-revenue li:nth-child(2) {
+    background:#2f4554;
+}
+.month-revenue li:nth-child(3) {
+    background:#61a0a8;
+}
+.month-revenue li:nth-child(4) {
+    background:#d48265;
+}
+.month-revenue li:nth-child(5) {
+    background:#91c7ae;
+}
+.month-revenue li:nth-child(6) {
+    background:#2f4554;
+}
+.month-revenue li:nth-child(7) {
+    background:#8dc1a9;
+}
+.month-revenue li:nth-child(8) {
+    background:#759aa0;
+}
