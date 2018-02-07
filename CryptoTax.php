@@ -6,31 +6,88 @@ spl_autoload_register(function ($class) {
     require_once('./' . $file);
 });
 
+/**
+ * CryptoTax - cost-basis calculation class
+ *
+ * @author Eran Galperin
+ * @license https://opensource.org/licenses/BSD-3-Clause BSD License
+ */
 class CryptoTax {
+    
+    /**
+     * Coin balances
+     * @var array 
+     */
     protected $_balances = [];
+    
+    /**
+     * Trades
+     * @var array
+     */
     protected $_trades = [];
+    
+    /**
+     * Unresolved trades
+     * - Trades we could not find existing balance for and therefor could not calculate the cost-basis
+     * @var array
+     */
     protected $_unresolved = [];
+    
+    /**
+     * Historical coin price storage
+     * @var object SQLite3 
+     */
     protected $_db;
+    
+    /**
+     * Cost-basis method
+     * - FIFO - First-in / First-out
+     * - LIFO - Last-in / First-out
+     * 
+     * Use class constants to change this
+     * @var string
+     */
     protected $_deltaMethod = self::FIFO;
+    
     const FIFO = 'fifo';
     const LIFO = 'lifo';
     
+    /**
+     * Add trades array
+     * @param array $trades
+     */
     public function addTrades($trades = []) {
         $trades = $this -> _trades + $trades;
         ksort($trades);
         $this -> _trades = $trades;
     }
     
+    /**
+     * Set cost-basis method
+     * @param string $method
+     */
     public function setDeltaMethod($method) {
         $this -> _deltaMethod = $method;
     }
     
+    /**
+     * Add balances array
+     * @param array $balances
+     */
     public function addBalances($balances = []) {
         foreach($balances as $balance) {
             $this ->addBalance($balance['time'], $balance['amount'], $balance['price'], $balance['symbol'],$balance['fee']);
         }
     }
     
+    /**
+     * Add balance 
+     * @param int $time UNIX timestamp
+     * @param float $amount Balance amount
+     * @param float $unitCost USD Price at the time of purchase
+     * @param string $symbol Coin symbol
+     * @param float $fee Fee paid (USD)
+     */
     public function addBalance($time,$amount,$unitCost,$symbol,$fee = 0) {
         if(!isset($this -> _balances[$symbol])) {
             $this -> _balances[$symbol] = [];
@@ -43,14 +100,25 @@ class CryptoTax {
         $this -> _balances[$symbol][$time] = ['amount' => $amount,'price' => $unitCost,'fee' => $fee];
     }
     
+    /**
+     * Get balances
+     * @return array
+     */
     public function getBalances() {
         return $this -> _balances;
     }
     
+    /**
+     * Get trades
+     * @return array
+     */
     public function getTrades() {
         return $this -> _trades;
     }
     
+    /**
+     * Calculate cost-basis for each trade
+     */
     public function calculateDeltas() {
         
         foreach($this -> _trades as $timestamp => $trade) {
@@ -69,6 +137,16 @@ class CryptoTax {
         }
     }
     
+    /**
+     * Reduce balance for each trade executed
+     * - Used by calculateDeltas() according to cost-basis method
+     * 
+     * @param float $amount Amount to reduce balance by
+     * @param string $coin Coin symbol
+     * @param int $time UNIX Timestamp
+     * @param float $price Price at the time we perform the reduction
+     * @return float The delta between balance price and trade price
+     */
     public function reduceBalance($amount,$coin,$time,$price) {
         if(isset($this -> _balances[$coin])) {
             $delta = 0;
@@ -112,6 +190,10 @@ class CryptoTax {
         }
     }
     
+    /**
+     * Get total deltas for all the transaction calculated
+     * @return float
+     */
     public function getTotalDelta() {
         $delta = 0;
         $fees = 0;
@@ -126,6 +208,10 @@ class CryptoTax {
         return $delta - $fees;
     }
     
+    /**
+     * Init coin price storage
+     * - Requires SQLite3 extension to be active
+     */
     public function initStorage() {
         if(empty($this -> _db)) {
             $db = new SQLite3('./prices.db');
@@ -134,6 +220,15 @@ class CryptoTax {
         
     }
     
+    /**
+     * Get historical coin price
+     * - Uses CryptoCompare API to retrieve historical price data
+     * - Uses SQLite database to avoid repeated API calls to speed up operation
+     * 
+     * @param string $coin Coin symbol
+     * @param int $time UNIX Timestamp
+     * @return float
+     */
     public function getPrice($coin,$time) {
         $this ->initStorage();
         $start = date('Y-m-d H:',$time) . '00:00';
@@ -159,6 +254,11 @@ class CryptoTax {
         
     }
     
+    
+    /**
+     * Get delta per month
+     * @return array
+     */
     public function getTimeSeries() {
         $series = array();
         foreach($this -> _trades as $trade) {
@@ -174,6 +274,10 @@ class CryptoTax {
         return $series;
     }
     
+    /**
+     * Get unresolved trades
+     * @return array
+     */
     public function getUnresolved() {
         return $this -> _unresolved;
     }

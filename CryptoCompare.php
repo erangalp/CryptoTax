@@ -1,9 +1,22 @@
 <?php
 
 /**
+ * CryptoCompare API wrapper
+ * 
  * @docs https://www.cryptocompare.com/api/
+ * @author Eran Galperin
+ * @license https://opensource.org/licenses/BSD-3-Clause BSD License
  */
 class CryptoCompare {
+    
+    /**
+     * Get historical coin price
+     * - Averages out 1 hour close / open prices
+     * 
+     * @param string $symbol Coin symbol
+     * @param int $time UNIX Timestamp
+     * @return float Price in USD
+     */
     public function getHistoricalPrice($symbol,$time) {
         
         // Get the hour that includes the timestamp
